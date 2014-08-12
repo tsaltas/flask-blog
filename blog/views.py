@@ -49,7 +49,5 @@ def add_post_post():
 
 @app.route("/post/<int:post_id>", methods=["GET"])
 def view_post(post_id):
-	posts = session.query(Post)
-	post = posts.filter(Post.id == post_id)
-
+	post = session.query(Post).get(post_id)
 	return render_template("view_post.html", post = post)
