@@ -50,4 +50,19 @@ def add_post_post():
 @app.route("/post/<int:post_id>", methods=["GET"])
 def view_post(post_id):
 	post = session.query(Post).get(post_id)
-	return render_template("view_post.html", post = post)
+	return render_template("view_post.html", post=post)
+
+@app.route("/post/<post_id>/edit", methods=["GET"])
+def edit_post_get(post_id):
+    post = session.query(Post).get(post_id)
+    return render_template("edit_post.html", post=post)
+
+@app.route("/post/<post_id>/edit", methods=["POST"])
+def edit_post_post(post_id):
+    post = Post(
+        title=request.form["title"],
+        content=mistune.markdown(request.form["content"]),
+    )
+    session.add(post)
+    session.commit()
+    return redirect(url_for("view_post", post_id = post.id))
