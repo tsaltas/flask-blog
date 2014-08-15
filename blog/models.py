@@ -1,3 +1,5 @@
+# ----Post class for blog app---- #
+
 import datetime
 
 from sqlalchemy import Column, Integer, String, Sequence, Text, DateTime
@@ -12,4 +14,17 @@ class Post(Base):
     content = Column(Text)
     datetime = Column(DateTime, default=datetime.datetime.now)
 
+# ----User class for app authentication---- #
+
+from flask.ext.login import UserMixin
+
+class User(Base, UserMixin):
+    __tablename__ = "users"
+
+    id = Column(Integer, Sequence("user_id_sequence"), primary_key=True)
+    name = Column(String(128))
+    email = Column(String(128), unique=True)
+    password = Column(String(128))
+
+# Create the app model
 Base.metadata.create_all(engine)
