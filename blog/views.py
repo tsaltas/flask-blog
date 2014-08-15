@@ -47,7 +47,7 @@ def add_post_post():
     session.commit()
     return redirect(url_for("posts"))
 
-@app.route("/post/<int:post_id>", methods=["GET"])
+@app.route("/post/<post_id>", methods=["GET"])
 def view_post(post_id):
 	post = session.query(Post).get(post_id)
 	return render_template("view_post.html", post=post)
@@ -66,3 +66,16 @@ def edit_post_post(post_id):
     session.commit()
     
     return redirect(url_for("view_post", post_id = post.id))
+
+@app.route("/post/<post_id>/confirm", methods=["POST"])
+def delete_post_confirm(post_id):
+    post = session.query(Post).get(post_id)
+    return render_template("view_post.html", post=post)
+
+@app.route("/post/<post_id>/delete", methods=["POST","GET"])
+def delete_post(post_id):
+    post = session.query(Post).get(post_id)
+    session.delete(post)
+    session.commit()
+    
+    return redirect(url_for("posts"))

@@ -1,4 +1,21 @@
 {% macro render_post(post) %}
+<div class="modal fade" id="confirm-delete" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1> {{ post.title }} </h1>
+            </div>
+            <div class="modal-body">
+                {{ post.content | safe }}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                        <a href="{{ url_for('delete_post', post_id = post.id) }}" class="btn btn-danger danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="row">
     <div class="col-md-2 text-right metadata">
         <ul class="list-unstyled">
@@ -7,6 +24,9 @@
             </li>
             <li>
                 <a href ="{{ url_for('edit_post_get', post_id = post.id) }}">Edit post</a>
+            </li>
+            <li>
+                <a data-toggle="modal" data-target="#confirm-delete" href ="{{ url_for('delete_post_confirm', post_id = post.id) }}">Delete post</a>
             </li>
         </ul>
 
