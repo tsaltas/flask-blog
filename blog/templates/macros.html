@@ -20,6 +20,9 @@
     <div class="col-md-2 text-right metadata">
         <ul class="list-unstyled">
             <li>
+                {{ post.author.name }}
+            </li>
+            <li>
                 {{ post.datetime | dateformat("%m/%d/%y") }}
             </li>
             <li>
