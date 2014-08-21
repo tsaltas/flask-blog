@@ -33,13 +33,14 @@ def posts(page=1, paginate_by=10):
         has_next=has_next,
         has_prev=has_prev,
         page=page,
-        total_pages=total_pages
+        total_pages=total_pages,
+        user=current_user
     )
 
 @app.route("/post/add", methods=["GET"])
 @login_required
 def add_post_get():
-	return render_template("add_post.html")
+	return render_template("add_post.html", user=current_user)
 
 @app.route("/post/add", methods=["POST"])
 @login_required
@@ -51,17 +52,24 @@ def add_post_post():
     )
     session.add(post)
     session.commit()
-    return redirect(url_for("posts"))
+    return redirect(url_for("posts", user=current_user))
 
 @app.route("/post/<post_id>", methods=["GET"])
 def view_post(post_id):
 	post = session.query(Post).get(post_id)
-	return render_template("view_post.html", post=post)
+	return render_template("view_post.html", post=post, user=current_user)
 
 @app.route("/post/<post_id>/edit", methods=["GET"])
 def edit_post_get(post_id):
     post = session.query(Post).get(post_id)
-    return render_template("edit_post.html", post=post)
+    if not current_user.is_authenticated():
+        flash("Please log in to edit your posts.")
+        return redirect(url_for("posts"))
+    elif post.author == current_user:
+        return render_template("edit_post.html", post=post, user=current_user)
+    else:
+        flash("Please only edit your own posts.")
+        return redirect(url_for("posts"))
 
 @app.route("/post/<post_id>/edit", methods=["POST"])
 def edit_post_post(post_id):
@@ -71,31 +79,39 @@ def edit_post_post(post_id):
     post.content = mistune.markdown(request.form["content"])
     session.commit()
     
-    return redirect(url_for("view_post", post_id = post.id))
+    return redirect(url_for("view_post", post_id = post.id, user=current_user))
 
 @app.route("/post/<post_id>/confirm", methods=["POST"])
 def delete_post_confirm(post_id):
     post = session.query(Post).get(post_id)
-    return render_template("view_post.html", post=post)
+    return render_template("view_post.html", post=post, user=current_user)
 
 @app.route("/post/<post_id>/delete", methods=["POST","GET"])
 def delete_post(post_id):
     post = session.query(Post).get(post_id)
-    session.delete(post)
-    session.commit()
     
-    return redirect(url_for("posts"))
+    if not current_user.is_authenticated():
+        flash("Please log in to delete your posts.")
+        return redirect(url_for("posts"))
+    elif post.author == current_user:
+        session.delete(post)
+        session.commit()
+        return redirect(url_for("posts"))
+    else:
+        flash("Please only delete your own posts.")
+        return redirect(url_for("posts"))
 
 # ----Login system---- #
 
 from flask import flash
 from flask.ext.login import login_user
+from flask.ext.login import logout_user
 from werkzeug.security import check_password_hash
 from models import User
 
 @app.route("/login", methods=["GET"])
 def login_get():
-    return render_template("login.html")
+    return render_template("login.html", user=current_user)
 
 @app.route("/login", methods=["POST"])
 def login_post():
@@ -108,3 +124,8 @@ def login_post():
 
     login_user(user)
     return redirect(request.args.get('next') or url_for("posts"))
+
+@app.route("/logout", methods=["GET"])
+def logout():
+    logout_user()
+    return redirect(url_for("posts"))
