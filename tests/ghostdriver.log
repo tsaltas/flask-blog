@@ -1,0 +1,12 @@
+PhantomJS is launching GhostDriver...
+[INFO  - 2014-12-20T22:59:46.781Z] GhostDriver - Main - running on port 59018
+[INFO  - 2014-12-20T22:59:47.658Z] Session [e5507040-889b-11e4-a069-d1c0aba4bac7] - page.settings - {"XSSAuditingEnabled":false,"javascriptCanCloseWindows":true,"javascriptCanOpenWindows":true,"javascriptEnabled":true,"loadImages":true,"localToRemoteUrlAccessEnabled":false,"userAgent":"Mozilla/5.0 (Macintosh; PPC Mac OS X) AppleWebKit/534.34 (KHTML, like Gecko) PhantomJS/1.9.8 Safari/534.34","webSecurityEnabled":true}
+[INFO  - 2014-12-20T22:59:47.658Z] Session [e5507040-889b-11e4-a069-d1c0aba4bac7] - page.customHeaders:  - {}
+[INFO  - 2014-12-20T22:59:47.658Z] Session [e5507040-889b-11e4-a069-d1c0aba4bac7] - Session.negotiatedCapabilities - {"browserName":"phantomjs","version":"1.9.8","driverName":"ghostdriver","driverVersion":"1.1.0","platform":"mac-10.9 (Mavericks)-64bit","javascriptEnabled":true,"takesScreenshot":true,"handlesAlerts":false,"databaseEnabled":false,"locationContextEnabled":false,"applicationCacheEnabled":false,"browserConnectionEnabled":false,"cssSelectorsEnabled":true,"webStorageEnabled":false,"rotatable":false,"acceptSslCerts":false,"nativeEvents":true,"proxy":{"proxyType":"direct"},"phantomjs.page.settings.loadImages":true}
+[INFO  - 2014-12-20T22:59:47.658Z] SessionManagerReqHand - _postNewSessionCommand - New Session Created: e5507040-889b-11e4-a069-d1c0aba4bac7
+[ERROR - 2014-12-20T22:59:48.906Z] Session [e5507040-889b-11e4-a069-d1c0aba4bac7] - page.onError - msg: ReferenceError: Can't find variable: $
+[ERROR - 2014-12-20T22:59:48.906Z] Session [e5507040-889b-11e4-a069-d1c0aba4bac7] - page.onError - stack:
+  (anonymous function) (http://0.0.0.0:5000/static/confirm_delete.js:1)
+[ERROR - 2014-12-20T22:59:49.169Z] Session [e5507040-889b-11e4-a069-d1c0aba4bac7] - page.onError - msg: ReferenceError: Can't find variable: $
+[ERROR - 2014-12-20T22:59:49.169Z] Session [e5507040-889b-11e4-a069-d1c0aba4bac7] - page.onError - stack:
+  (anonymous function) (http://0.0.0.0:5000/static/confirm_delete.js:1)
