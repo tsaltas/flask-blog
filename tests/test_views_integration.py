@@ -1,6 +1,7 @@
 import os
 import unittest
 from urlparse import urlparse
+import mistune
 
 from werkzeug.security import generate_password_hash
 
@@ -39,6 +40,19 @@ class TestViews(unittest.TestCase):
 			http_session["_fresh"] = True
 
 	def testAddPost(self):
+		# Does not work before logged in
+		response = self.client.post("/post/add", data = {
+			"title": "Test Post",
+			"content": "Test content"
+			})
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/login")
+		
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 0)
+		
+		# Works after logging in
 		self.simulate_login()
 
 		response = self.client.post("/post/add", data = {
@@ -48,6 +62,7 @@ class TestViews(unittest.TestCase):
 
 		self.assertEqual(response.status_code, 302)
 		self.assertEqual(urlparse(response.location).path, "/")
+		
 		posts = session.query(models.Post).all()
 		self.assertEqual(len(posts), 1)
 
@@ -55,6 +70,36 @@ class TestViews(unittest.TestCase):
 		self.assertEqual(post.title, "Test Post")
 		self.assertEqual(post.content, "<p>Test content</p>\n")
 		self.assertEqual(post.author, self.user)
+
+	def testEditPost(self):
+		# Create an example post by Alice
+		self.post = models.Post(title = "Test Post"
+								, content = mistune.markdown("Test content") 
+								, author = self.user
+								)
+		session.add(self.post)
+		session.commit()
+
+		# Does not work before logged in
+		response = self.client.get("/post/<post_id>/edit", data = {
+			"post_id": self.post.id
+			})
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/")
+		
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+
+		posts = session.query(models.Post).all()
+		post = posts[0]
+		self.assertEqual(post.title, "Test Post")
+		self.assertEqual(post.content, "<p>Test content</p>\n")
+		self.assertEqual(post.author, self.user)
+		
+		# Does not work if user is not author of post
+
+		# Works is user is logged in and author of post
 
 if __name__ == "__main__":
 	unittest.main()
