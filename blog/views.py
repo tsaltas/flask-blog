@@ -62,6 +62,7 @@ def view_post(post_id):
 @app.route("/post/<post_id>/edit", methods=["GET"])
 def edit_post_get(post_id):
     post = session.query(Post).get(post_id)
+
     if not current_user.is_authenticated():
         flash("Please log in to edit your posts.")
         return redirect(url_for("posts"))
@@ -74,13 +75,18 @@ def edit_post_get(post_id):
 @app.route("/post/<post_id>/edit", methods=["POST"])
 def edit_post_post(post_id):
     post = session.query(Post).get(post_id)
-
-    post.title = request.form["title"]
-    post.content = mistune.markdown(request.form["content"])
-    session.commit()
+    if not current_user.is_authenticated():
+        flash("Please log in to edit your posts.")
+        return redirect(url_for("posts"))
+    elif post.author == current_user:
+        post.title = request.form["title"]
+        post.content = mistune.markdown(request.form["content"])
+        session.commit()
+        return redirect(url_for("view_post", post_id = post.id, user=current_user))
+    else:
+        flash("Please only edit your own posts.")
+        return redirect(url_for("posts"))
     
-    return redirect(url_for("view_post", post_id = post.id, user=current_user))
-
 @app.route("/post/<post_id>/confirm", methods=["POST"])
 def delete_post_confirm(post_id):
     post = session.query(Post).get(post_id)

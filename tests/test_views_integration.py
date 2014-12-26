@@ -20,13 +20,18 @@ class TestViews(unittest.TestCase):
 		# Set up the tables in the database
 		Base.metadata.create_all(engine)
 
-		# Create an example user
-		self.user = models.User(name = "Alice"
+		# Create two example users
+		self.alice = models.User(name = "Alice"
 						      , email = "alice@example.com"
 						      , password = generate_password_hash("test")
 						       )
+		self.bob = models.User(name = "Bob"
+						      , email = "bob@example.com"
+						      , password = generate_password_hash("test")
+						       )
 
-		session.add(self.user)
+		session.add(self.alice)
+		session.add(self.bob)
 		session.commit()
 
 	def tearDown(self):
@@ -34,10 +39,14 @@ class TestViews(unittest.TestCase):
 		# Remove the tables and their data from the database
 		Base.metadata.drop_all(engine)
 
-	def simulate_login(self):
+	def simulate_login(self, user):
 		with self.client.session_transaction() as http_session:
-			http_session["user_id"] = str(self.user.id)
+			http_session["user_id"] = str(user.id)
 			http_session["_fresh"] = True
+		
+	def simulate_logout(self):
+		with self.client.session_transaction() as http_session:
+				http_session["user_id"] = None
 
 	def testAddPost(self):
 		# Does not work before logged in
@@ -53,7 +62,7 @@ class TestViews(unittest.TestCase):
 		self.assertEqual(len(posts), 0)
 		
 		# Works after logging in
-		self.simulate_login()
+		self.simulate_login(self.alice)
 
 		response = self.client.post("/post/add", data = {
 			"title": "Test Post",
@@ -69,20 +78,63 @@ class TestViews(unittest.TestCase):
 		post = posts[0]
 		self.assertEqual(post.title, "Test Post")
 		self.assertEqual(post.content, "<p>Test content</p>\n")
-		self.assertEqual(post.author, self.user)
+		self.assertEqual(post.author, self.alice)
+	
+	def testEditPost_Get(self):
+		self.simulate_login(self.alice)
 
-	def testEditPost(self):
 		# Create an example post by Alice
-		self.post = models.Post(title = "Test Post"
-								, content = mistune.markdown("Test content") 
-								, author = self.user
-								)
-		session.add(self.post)
-		session.commit()
+		response = self.client.post("/post/add", data = {
+			"title": "Test Post",
+			"content": "Test content"
+			})
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+		post = posts[0]
+		self.assertEqual(post.title, "Test Post")
+		self.assertEqual(post.content, "<p>Test content</p>\n")
+		self.assertEqual(post.author, self.alice)
 
-		# Does not work before logged in
-		response = self.client.get("/post/<post_id>/edit", data = {
-			"post_id": self.post.id
+		# Redirect if not logged in
+		self.simulate_logout()
+		response = self.client.get("/post/%i/edit" % post.id)
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/")
+		
+		# Redirect if user is not author of post
+		self.simulate_login(self.bob)
+		
+		response = self.client.get("/post/%i/edit" % post.id)
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/")
+
+		# Works is user is logged in and author of post
+		self.simulate_login(self.alice)
+
+		response = self.client.get("/post/%i/edit" % post.id)
+		self.assertEqual(response.status_code, 200)
+		
+	def testEditPost_Post(self):	
+		self.simulate_login(self.alice)
+
+		# Create an example post by Alice
+		response = self.client.post("/post/add", data = {
+			"title": "Test Post",
+			"content": "Test content"
+			})
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+		post = posts[0]
+		self.assertEqual(post.title, "Test Post")
+		self.assertEqual(post.content, "<p>Test content</p>\n")
+		self.assertEqual(post.author, self.alice)
+
+		# Redirect if not logged in
+		self.simulate_logout()
+
+		response = self.client.post("/post/%i/edit" % post.id, data = {
+			"title": "Edited Post Title",
+			"content": "Edited content"
 			})
 
 		self.assertEqual(response.status_code, 302)
@@ -90,16 +142,85 @@ class TestViews(unittest.TestCase):
 		
 		posts = session.query(models.Post).all()
 		self.assertEqual(len(posts), 1)
-
-		posts = session.query(models.Post).all()
 		post = posts[0]
 		self.assertEqual(post.title, "Test Post")
 		self.assertEqual(post.content, "<p>Test content</p>\n")
-		self.assertEqual(post.author, self.user)
+		self.assertEqual(post.author, self.alice)
+
+		# Redirect if user is not author of post
+		self.simulate_login(self.bob)
+
+		response = self.client.post("/post/%i/edit" % post.id, data = {
+			"title": "Edited Post Title",
+			"content": "Edited content"
+			})
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/")
 		
-		# Does not work if user is not author of post
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+		post = posts[0]
+		self.assertEqual(post.title, "Test Post")
+		self.assertEqual(post.content, "<p>Test content</p>\n")
+		self.assertEqual(post.author, self.alice)
 
 		# Works is user is logged in and author of post
+		self.simulate_login(self.alice)
+
+		response = self.client.post("/post/%i/edit" % post.id, data = {
+			"title": "Edited Post Title",
+			"content": "Edited content"
+			})
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/post/%i" % post.id)
+		
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+		post = posts[0]
+		self.assertEqual(post.title, "Edited Post Title")
+		self.assertEqual(post.content, "<p>Edited content</p>\n")
+		self.assertEqual(post.author, self.alice)
+
+	def testDeletePost(self):
+		self.simulate_login(self.alice)
+
+		# Create an example post by Alice
+		response = self.client.post("/post/add", data = {
+			"title": "Test Post",
+			"content": "Test content"
+			})
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+		post = posts[0]
+		self.assertEqual(post.title, "Test Post")
+		self.assertEqual(post.content, "<p>Test content</p>\n")
+		self.assertEqual(post.author, self.alice)
+
+		# Redirect if not logged in
+		self.simulate_logout()
+
+		response = self.client.post("/post/%i/edit" % post.id, data = {
+			"title": "Edited Post Title",
+			"content": "Edited content"
+			})
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/")
+		
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+		post = posts[0]
+		self.assertEqual(post.title, "Test Post")
+		self.assertEqual(post.content, "<p>Test content</p>\n")
+		self.assertEqual(post.author, self.alice)
+
+		# Redirect if user is not author of post
+		self.simulate_login(self.bob)
+
+		# Works is user is logged in and author of post
+		self.simulate_login(self.alice)
 
 if __name__ == "__main__":
 	unittest.main()
