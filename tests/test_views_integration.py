@@ -201,11 +201,7 @@ class TestViews(unittest.TestCase):
 		# Redirect if not logged in
 		self.simulate_logout()
 
-		response = self.client.post("/post/%i/edit" % post.id, data = {
-			"title": "Edited Post Title",
-			"content": "Edited content"
-			})
-
+		response = self.client.post("/post/%i/delete" % post.id)
 		self.assertEqual(response.status_code, 302)
 		self.assertEqual(urlparse(response.location).path, "/")
 		
@@ -219,8 +215,26 @@ class TestViews(unittest.TestCase):
 		# Redirect if user is not author of post
 		self.simulate_login(self.bob)
 
+		response = self.client.post("/post/%i/delete" % post.id)
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/")
+		
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 1)
+		post = posts[0]
+		self.assertEqual(post.title, "Test Post")
+		self.assertEqual(post.content, "<p>Test content</p>\n")
+		self.assertEqual(post.author, self.alice)
+
 		# Works is user is logged in and author of post
 		self.simulate_login(self.alice)
+
+		response = self.client.post("/post/%i/delete" % post.id)
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(urlparse(response.location).path, "/")
+		
+		posts = session.query(models.Post).all()
+		self.assertEqual(len(posts), 0)
 
 if __name__ == "__main__":
 	unittest.main()
