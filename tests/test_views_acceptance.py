@@ -58,5 +58,9 @@ class TestViews(unittest.TestCase):
 		button.click()
 		self.assertEqual(self.browser.url, "http://0.0.0.0:5000/login")
 
+	def testLogoutCorrect(self):
+		self.browser.visit("http://0.0.0.0:5000/logout")
+		self.assertEqual(self.browser.url, "http://0.0.0.0:5000/")
+
 if __name__ == "__main__":
 	unittest.main()
